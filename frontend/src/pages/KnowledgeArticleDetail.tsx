@@ -37,7 +37,7 @@ export function KnowledgeArticleDetail() {
       navigate(`/knowledge/${created.id}`);
     } else if (id) {
       const updated = await knowledgeApi.update(id, payload);
-      setArticle(updated);
+      if (updated) setArticle(updated);
       setEditing(false);
     }
   }

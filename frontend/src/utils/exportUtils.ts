@@ -10,13 +10,13 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportToCsv(filename: string, rows: Record<string, unknown>[]) {
+export function exportToCsv<T extends object>(filename: string, rows: T[]) {
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const csv = XLSX.utils.sheet_to_csv(worksheet);
   downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), filename.endsWith('.csv') ? filename : `${filename}.csv`);
 }
 
-export function exportToXlsx(filename: string, rows: Record<string, unknown>[], sheetName = 'Dados') {
+export function exportToXlsx<T extends object>(filename: string, rows: T[], sheetName = 'Dados') {
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);

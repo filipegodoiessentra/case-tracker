@@ -93,6 +93,12 @@ export interface Case {
   tags: string[];
 }
 
+export interface CaseRelation {
+  caseId: string;
+  relatedCaseId: string;
+  note?: string;
+}
+
 export interface TimelineEntry {
   id: string;
   caseId: string;

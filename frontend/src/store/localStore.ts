@@ -80,7 +80,9 @@ export const localStore = {
   },
 
   // ---- Cases ----
-  listCases: (filters: Record<string, string | undefined> = {}) => {
+  listCases: (
+    filters: { status?: string; type?: string; priority?: string; country?: string; owner?: string; q?: string } = {},
+  ) => {
     let results = state.cases;
     if (filters.status) results = results.filter((c) => c.status === filters.status);
     if (filters.type) results = results.filter((c) => c.type === filters.type);
