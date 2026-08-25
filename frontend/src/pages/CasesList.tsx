@@ -123,8 +123,8 @@ export function CasesList() {
         <DataTable
           columns={columns}
           rows={cases}
-          keyExtractor={(c) =navigate(
-          onRowClick={(c) => (window.location.href = `/cases/${c.id}`)}
+          keyExtractor={(c) => c.id}
+          onRowClick={(c) => navigate(`/cases/${c.id}`)}
         />
       )}
     </div>
