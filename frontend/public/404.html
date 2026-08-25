@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  GitHub Pages serve arquivos estáticos e não sabe rotear /cases/123 do React Router.
+  Este 404.html redireciona para index.html preservando o caminho (baseado em
+  https://github.com/rafgraph/spa-github-pages).
+  pathSegmentsToKeep = 1 porque este é um "project page" (usuario.github.io/repo/).
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Essentra Case Tracker</title>
+    <script>
+      var pathSegmentsToKeep = 1;
+      var l = location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?redirect=' +
+          encodeURIComponent(l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/') + l.search + l.hash),
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

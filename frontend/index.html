@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Essentra Case Tracker</title>
+    <!-- Restaura a rota redirecionada pelo 404.html (ver public/404.html) -->
+    <script>
+      (function () {
+        var redirect = new URLSearchParams(location.search).get('redirect');
+        if (redirect) {
+          history.replaceState(null, '', location.pathname + redirect);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

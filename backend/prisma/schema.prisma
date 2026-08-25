@@ -1,0 +1,212 @@
+// Essentra Case Tracker — modelagem completa do domínio.
+// DATA_SOURCE=memory (padrão) usa dados mock em src/data; este schema é a
+// fonte de verdade para quando DATA_SOURCE=prisma (PostgreSQL real).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CaseType {
+  EXPORT_BRAZIL
+  DIRECT_SHIPMENT
+  CUSTOMER_SERVICE
+  LOGISTICS
+  CERTIFICATE_ORIGIN
+  CERTIFICATE_QUALITY
+  PROFORMA_INVOICE
+  COMMERCIAL_INVOICE
+  FINANCIAL
+  COMPLAINT
+  OTHER
+}
+
+enum CaseStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  WAITING_EXPORT
+  WAITING_FACTORY
+  WAITING_FINANCIAL
+  RESOLVED
+  CLOSED
+}
+
+enum CasePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  azureObjectId String?  @unique
+  role          String   @default("Analyst")
+  createdAt     DateTime @default(now())
+
+  ownedCases     Case[]          @relation("CaseOwner")
+  timelineEvents TimelineEntry[]
+  attachments    Attachment[]
+  articles       KnowledgeArticle[]
+}
+
+model Customer {
+  id      String  @id @default(uuid())
+  name    String
+  group   String?
+  country String?
+  cases   Case[]
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+
+  cases    Case[]             @relation("CaseTags")
+  articles KnowledgeArticle[] @relation("ArticleTags")
+}
+
+model Case {
+  id          String       @id @default(uuid())
+  caseNumber  String       @unique // ex.: CASE-00145 (gerado em services/caseNumber.ts)
+  title       String
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+  customerId  String?
+  country     String?
+  region      String?
+  salesOwner  String?
+  type        CaseType
+  origin      String? // Outlook, CE, SAP, Pasta de rede, Telefone...
+  status      CaseStatus   @default(NEW)
+  priority    CasePriority @default(MEDIUM)
+  comments    String?
+
+  // Campos adicionais — "Modo Analista Comercial"
+  customerGroup   String?
+  salesOrder      String?
+  purchaseOrder   String?
+  material        String?
+  partNumber      String?
+  shipFrom        String?
+  shipTo          String?
+  incoterm        String?
+  shipDate        DateTime?
+  tracking        String?
+  internalOwner   String?
+  managerOwner    String?
+
+  dueDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  ownerId String?
+  owner   User?   @relation("CaseOwner", fields: [ownerId], references: [id])
+
+  tags           Tag[]           @relation("CaseTags")
+  timeline       TimelineEntry[]
+  attachments    Attachment[]
+  emailLinks     EmailLink[]
+  lessonLearned  LessonLearned?
+
+  relatedFrom CaseRelation[] @relation("RelationFrom")
+  relatedTo   CaseRelation[] @relation("RelationTo")
+}
+
+// Relacionamento N:N explícito entre casos (com nota opcional).
+model CaseRelation {
+  id            String @id @default(uuid())
+  caseId        String
+  relatedCaseId String
+  note          String?
+
+  case        Case @relation("RelationFrom", fields: [caseId], references: [id])
+  relatedCase Case @relation("RelationTo", fields: [relatedCaseId], references: [id])
+
+  @@unique([caseId, relatedCaseId])
+}
+
+model TimelineEntry {
+  id           String   @id @default(uuid())
+  caseId       String
+  case         Case     @relation(fields: [caseId], references: [id])
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  note         String
+  statusChange CaseStatus?
+  createdAt    DateTime @default(now())
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id])
+  fileName   String
+  fileType   String
+  url        String
+  uploadedBy String?
+  uploader   User?    @relation(fields: [uploadedBy], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+// Estrutura preparada para Microsoft Graph API (e-mails do Outlook vinculados ao caso).
+model EmailLink {
+  id          String   @id @default(uuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id])
+  subject     String
+  sender      String
+  receivedAt  DateTime
+  outlookLink String?
+  createdAt   DateTime @default(now())
+}
+
+model LessonLearned {
+  id                    String  @id @default(uuid())
+  caseId                String  @unique
+  case                  Case    @relation(fields: [caseId], references: [id])
+  problem               String
+  rootCause             String
+  resolution            String
+  teamsInvolved         String[]
+  documentsUsed         String[]
+  processFollowed       String?
+  risksIdentified       String?
+  futureRecommendations String?
+  finalComments         String?
+  createdAt             DateTime @default(now())
+}
+
+model KnowledgeArticle {
+  id              String   @id @default(uuid())
+  title           String
+  contentMarkdown String
+  category        String
+  authorId        String?
+  author          User?    @relation(fields: [authorId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tags Tag[] @relation("ArticleTags")
+}
+
+model ProcessDoc {
+  id                String   @id @default(uuid())
+  title             String
+  category          String
+  objective         String
+  flowchart         String? // URL/descrição do fluxograma
+  responsible       String[]
+  requiredDocuments String[]
+  stepByStep        String // markdown
+  commonErrors      String?
+  faq               String? // markdown (perguntas e respostas)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
