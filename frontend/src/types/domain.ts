@@ -185,3 +185,55 @@ export interface AiSuggestion {
   averageResolutionDays: number | null;
   teamsInvolved: string[];
 }
+
+// ---- Pasta de exportação (arquivos locais vinculados ao caso) ----
+export interface CaseFolderLink {
+  caseId: string;
+  folderPath: string[]; // ex.: ['Clientes Exportação', 'Grupo Industrial Azteca', 'Embarque 2026-01']
+  linkedAt: string;
+}
+
+export interface LinkedFile {
+  id: string;
+  caseId: string;
+  fileName: string;
+  relativePath: string; // caminho dentro da pasta vinculada, para exibição
+  addedAt: string;
+}
+
+// ---- Documentos de exportação (Proforma → Commercial Invoice + Packing List) ----
+export type ExportDocumentStage = 'PROFORMA' | 'COMMERCIAL_INVOICE';
+
+export interface ExportItem {
+  id: string;
+  lineNo: number;
+  itemCode: string;
+  description: string;
+  qty: number;
+  uom: string;
+  price: number;
+  netWeightKg?: number | null;
+  grossWeightKg?: number | null;
+  boxes?: number | null;
+  dimensions?: string | null;
+}
+
+export interface ExportDocument {
+  id: string;
+  caseId: string;
+  stage: ExportDocumentStage;
+  invoiceNumber: string;
+  invoiceDate: string; // ISO date (yyyy-MM-dd)
+  currency: string;
+  incoterm: string;
+  ncm?: string | null;
+  customerName: string;
+  customerTaxId?: string | null;
+  customerAddressLines: string[];
+  customerCity?: string | null;
+  customerCountry?: string | null;
+  items: ExportItem[];
+  createdAt: string;
+  updatedAt: string;
+  convertedAt?: string | null;
+}

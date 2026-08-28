@@ -2,7 +2,7 @@
 // localStorage), sem nenhuma chamada de rede. Mantém a mesma assinatura para
 // as páginas não precisarem mudar caso um backend real seja reintroduzido.
 import { localStore } from '../store/localStore';
-import type { Attachment, Case, EmailLink, LessonLearned, TimelineEntry } from '../types/domain';
+import type { Attachment, Case, EmailLink, ExportDocument, LessonLearned, TimelineEntry } from '../types/domain';
 
 export interface CaseFilters {
   status?: string;
@@ -55,4 +55,22 @@ export const casesApi = {
 
   getLessonLearned: async (id: string) => localStore.getLessonLearned(id),
   saveLessonLearned: async (id: string, data: LessonLearned) => localStore.saveLessonLearned(id, data),
+
+  // ---- Pasta de exportação / arquivos vinculados ----
+  getCaseFolderLink: async (id: string) => localStore.getCaseFolderLink(id),
+  setCaseFolderLink: async (id: string, folderPath: string[]) => localStore.setCaseFolderLink(id, folderPath),
+  clearCaseFolderLink: async (id: string) => localStore.clearCaseFolderLink(id),
+  listLinkedFiles: async (id: string) => localStore.listLinkedFiles(id),
+  addLinkedFile: async (id: string, fileName: string, relativePath: string) => localStore.addLinkedFile(id, fileName, relativePath),
+  removeLinkedFile: async (linkedFileId: string) => localStore.removeLinkedFile(linkedFileId),
+
+  // ---- Documentos de exportação (Proforma → Commercial Invoice + Packing List) ----
+  listExportDocuments: async (id: string) => localStore.listExportDocuments(id),
+  createExportDocument: async (
+    id: string,
+    data: Omit<ExportDocument, 'id' | 'caseId' | 'stage' | 'createdAt' | 'updatedAt' | 'convertedAt'>,
+  ) => localStore.createExportDocument(id, data),
+  updateExportDocument: async (docId: string, data: Partial<ExportDocument>) => localStore.updateExportDocument(docId, data),
+  convertToCommercialInvoice: async (docId: string) => localStore.convertToCommercialInvoice(docId),
+  deleteExportDocument: async (docId: string) => localStore.deleteExportDocument(docId),
 };

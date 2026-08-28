@@ -6,14 +6,18 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { TagPill } from '../components/common/Tag';
+import { ExportFolderPanel } from '../components/exportdocs/ExportFolderPanel';
+import { ExportDocumentsPanel } from '../components/exportdocs/ExportDocumentsPanel';
 import { CASE_TYPE_LABELS, type Attachment, type Case, type EmailLink, type LessonLearned, type TimelineEntry } from '../types/domain';
 
-type Tab = 'overview' | 'timeline' | 'attachments' | 'emails' | 'related' | 'lesson';
+type Tab = 'overview' | 'timeline' | 'attachments' | 'exportFolder' | 'exportDocs' | 'emails' | 'related' | 'lesson';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Visão geral' },
   { key: 'timeline', label: 'Histórico' },
   { key: 'attachments', label: 'Anexos' },
+  { key: 'exportFolder', label: 'Pasta de Exportação' },
+  { key: 'exportDocs', label: 'Proforma/Invoice/Packing' },
   { key: 'emails', label: 'E-mails' },
   { key: 'related', label: 'Casos relacionados' },
   { key: 'lesson', label: 'Lição aprendida' },
@@ -161,6 +165,10 @@ export function CaseDetail() {
           </ul>
         </Card>
       )}
+
+      {tab === 'exportFolder' && id && <ExportFolderPanel caseId={id} />}
+
+      {tab === 'exportDocs' && <ExportDocumentsPanel caseData={caseData} />}
 
       {tab === 'emails' && (
         <Card>

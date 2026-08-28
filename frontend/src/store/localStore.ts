@@ -5,10 +5,13 @@ import * as seed from '../data/mockData';
 import type {
   Attachment,
   Case,
+  CaseFolderLink,
   CaseRelation,
   EmailLink,
+  ExportDocument,
   KnowledgeArticle,
   LessonLearned,
+  LinkedFile,
   ProcessDoc,
   TimelineEntry,
 } from '../types/domain';
@@ -24,6 +27,9 @@ interface StoreState {
   caseRelations: CaseRelation[];
   knowledgeArticles: KnowledgeArticle[];
   processes: ProcessDoc[];
+  linkedFiles: LinkedFile[];
+  caseFolderLinks: CaseFolderLink[];
+  exportDocuments: ExportDocument[];
 }
 
 function seedState(): StoreState {
@@ -36,13 +42,16 @@ function seedState(): StoreState {
     caseRelations: [...seed.caseRelations],
     knowledgeArticles: seed.knowledgeArticles.map((a) => ({ ...a, tags: [...a.tags] })),
     processes: [...seed.processes],
+    linkedFiles: [],
+    caseFolderLinks: [],
+    exportDocuments: [],
   };
 }
 
 function loadState(): StoreState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as StoreState;
+    if (raw) return { ...seedState(), ...(JSON.parse(raw) as StoreState) };
   } catch {
     // localStorage indisponível ou dados corrompidos — cai para os dados demo.
   }
@@ -355,5 +364,84 @@ export const localStore = {
       averageResolutionDays: avgDays,
       teamsInvolved: Array.from(teams),
     };
+  },
+
+  // ---- Pasta de exportação vinculada ao caso ----
+  getCaseFolderLink: (caseId: string) => state.caseFolderLinks.find((f) => f.caseId === caseId) ?? null,
+  setCaseFolderLink: (caseId: string, folderPath: string[]) => {
+    const idx = state.caseFolderLinks.findIndex((f) => f.caseId === caseId);
+    const link: CaseFolderLink = { caseId, folderPath, linkedAt: new Date().toISOString() };
+    if (idx === -1) state.caseFolderLinks.push(link);
+    else state.caseFolderLinks[idx] = link;
+    persist();
+    return link;
+  },
+  clearCaseFolderLink: (caseId: string) => {
+    state.caseFolderLinks = state.caseFolderLinks.filter((f) => f.caseId !== caseId);
+    state.linkedFiles = state.linkedFiles.filter((f) => f.caseId !== caseId);
+    persist();
+  },
+
+  // ---- Arquivos vinculados (referência, sem cópia) ----
+  listLinkedFiles: (caseId: string) => state.linkedFiles.filter((f) => f.caseId === caseId),
+  addLinkedFile: (caseId: string, fileName: string, relativePath: string) => {
+    const created: LinkedFile = { id: crypto.randomUUID(), caseId, fileName, relativePath, addedAt: new Date().toISOString() };
+    state.linkedFiles.unshift(created);
+    state.timeline.unshift({
+      id: crypto.randomUUID(),
+      caseId,
+      note: `Arquivo vinculado ao histórico: ${relativePath || fileName}`,
+      createdAt: created.addedAt,
+    });
+    persist();
+    return created;
+  },
+  removeLinkedFile: (id: string) => {
+    state.linkedFiles = state.linkedFiles.filter((f) => f.id !== id);
+    persist();
+  },
+
+  // ---- Documentos de exportação (Proforma → Commercial Invoice + Packing List) ----
+  listExportDocuments: (caseId: string) =>
+    state.exportDocuments.filter((d) => d.caseId === caseId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+  getExportDocument: (id: string) => state.exportDocuments.find((d) => d.id === id) ?? null,
+  createExportDocument: (caseId: string, data: Omit<ExportDocument, 'id' | 'caseId' | 'stage' | 'createdAt' | 'updatedAt' | 'convertedAt'>) => {
+    const now = new Date().toISOString();
+    const created: ExportDocument = { ...data, id: crypto.randomUUID(), caseId, stage: 'PROFORMA', createdAt: now, updatedAt: now };
+    state.exportDocuments.unshift(created);
+    state.timeline.unshift({
+      id: crypto.randomUUID(),
+      caseId,
+      note: `Proforma Invoice ${created.invoiceNumber} gerada.`,
+      createdAt: now,
+    });
+    persist();
+    return created;
+  },
+  updateExportDocument: (id: string, data: Partial<ExportDocument>) => {
+    const idx = state.exportDocuments.findIndex((d) => d.id === id);
+    if (idx === -1) return null;
+    state.exportDocuments[idx] = { ...state.exportDocuments[idx], ...data, updatedAt: new Date().toISOString() };
+    persist();
+    return state.exportDocuments[idx];
+  },
+  convertToCommercialInvoice: (id: string) => {
+    const idx = state.exportDocuments.findIndex((d) => d.id === id);
+    if (idx === -1) return null;
+    const now = new Date().toISOString();
+    const updated = { ...state.exportDocuments[idx], stage: 'COMMERCIAL_INVOICE' as const, convertedAt: now, updatedAt: now };
+    state.exportDocuments[idx] = updated;
+    state.timeline.unshift({
+      id: crypto.randomUUID(),
+      caseId: updated.caseId,
+      note: `Proforma ${updated.invoiceNumber} convertida em Commercial Invoice + Packing List.`,
+      createdAt: now,
+    });
+    persist();
+    return updated;
+  },
+  deleteExportDocument: (id: string) => {
+    state.exportDocuments = state.exportDocuments.filter((d) => d.id !== id);
+    persist();
   },
 };
